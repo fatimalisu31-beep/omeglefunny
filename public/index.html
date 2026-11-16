@@ -1,6 +1,38 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
+<!-- Gender & Country Match Filters -->
+<div id="filterSection" class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Match Filters</span>
+        <span id="filterStatus" class="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">Active</span>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+        <div>
+            <label class="block text-[11px] text-gray-400 mb-1">Looking for:</label>
+            <select id="genderFilter" class="w-full bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg p-2 focus:outline-none focus:border-blue-500">
+                <option value="any">Any Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-[11px] text-gray-400 mb-1">Country:</label>
+            <select id="countryFilter" class="w-full bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg p-2 focus:outline-none focus:border-blue-500">
+                <option value="any">Worldwide</option>
+                <option value="us">United States</option>
+                <option value="uk">United Kingdom</option>
+                <option value="bd">Bangladesh</option>
+                <option value="in">India</option>
+                <option value="ca">Canada</option>
+            </select>
+        </div>
+    </div>
+    <button onclick="applyFilters()" class="w-full mt-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg transition text-white">
+        Apply Filters
+    </button>
+</div>
+    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VibeLink - Talk to Strangers, Free Live Video & Text Chat</title>
