@@ -4,135 +4,121 @@ const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1);
+app.use(express.json({ limit: '2kb' }));
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Separate waiting queues for text and video modes
+// ---------- PREMIUM CODES ----------
+// Set on Render: PREMIUM_CODES=VIBE-AB12CD,VIBE-XY98ZW   (comma separated, one code per buyer)
+const PREMIUM_CODES = new Set(
+  (process.env.PREMIUM_CODES || '').split(',').map(c => c.trim().toLowerCase()).filter(Boolean)
+);
+const isPremiumCode = c => typeof c === 'string' && PREMIUM_CODES.has(c.trim().toLowerCase());
+
+const attempts = new Map(); // simple brute-force limiter: 10 tries / minute / IP
+setInterval(() => attempts.clear(), 60 * 1000);
+app.post('/api/premium/verify', (req, res) => {
+  const n = (attempts.get(req.ip) || 0) + 1;
+  attempts.set(req.ip, n);
+  if (n > 10) return res.status(429).json({ ok: false });
+  res.json({ ok: isPremiumCode(req.body && req.body.code) });
+});
+
+// ---------- MATCHING ----------
 const queues = { text: [], video: [] };
-// Map socket.id -> { partnerId, roomId, mode }
 const activePairs = new Map();
-// Simple in-memory report counter (use Redis/DB in production)
 const reportCounts = new Map();
 
-function findMatch(socket, mode, interests) {
+function compatible(a, b) {
+  // Country filter (premium only)
+  if (a.premium && a.wantCountry !== 'any' && b.country !== a.wantCountry) return false;
+  if (b.premium && b.wantCountry !== 'any' && a.country !== b.wantCountry) return false;
+  // Strict interest match (premium only)
+  const overlap = a.interests.filter(t => b.interests.includes(t));
+  if (a.premium && a.strict && a.interests.length && !overlap.length) return false;
+  if (b.premium && b.strict && b.interests.length && !overlap.length) return false;
+  return true;
+}
+
+function findMatch(me, mode) {
   const queue = queues[mode];
-  const existingIdx = queue.findIndex(u => u.id === socket.id);
-  if (existingIdx !== -1) queue.splice(existingIdx, 1);
+  const old = queue.findIndex(u => u.id === me.id);
+  if (old !== -1) queue.splice(old, 1);
 
-  let bestMatchIndex = -1;
-  let sharedTags = [];
-
-  // 1. Prioritize users with matching interest tags
-  if (interests.length > 0) {
-    for (let i = 0; i < queue.length; i++) {
-      const overlap = queue[i].interests.filter(tag => interests.includes(tag));
-      if (overlap.length > 0) {
-        bestMatchIndex = i;
-        sharedTags = overlap;
-        break;
-      }
-    }
+  // Best candidate: shared interest > waiting premium user with filters (hardest to match) > anyone compatible
+  const restricted = u => u.premium && (u.wantCountry !== 'any' || u.strict);
+  let matchIdx = -1, sharedTags = [], best = -1;
+  for (let i = 0; i < queue.length; i++) {
+    if (!compatible(me, queue[i])) continue;
+    const overlap = queue[i].interests.filter(t => me.interests.includes(t));
+    const score = overlap.length ? 2 : (restricted(queue[i]) ? 1 : 0);
+    if (score > best) { best = score; matchIdx = i; sharedTags = overlap; }
   }
 
-  // 2. Fallback to any waiting user if no tag match
-  if (bestMatchIndex === -1 && queue.length > 0) {
-    bestMatchIndex = 0;
-  }
-
-  if (bestMatchIndex !== -1) {
-    const partner = queue.splice(bestMatchIndex, 1)[0];
-    const roomId = `${socket.id}#${partner.id}`;
-
-    activePairs.set(socket.id, { partnerId: partner.id, roomId, mode });
-    activePairs.set(partner.id, { partnerId: socket.id, roomId, mode });
-
-    io.to(socket.id).emit('matched', { initiator: true, sharedTags });
-    io.to(partner.id).emit('matched', { initiator: false, sharedTags });
+  if (matchIdx !== -1) {
+    const partner = queue.splice(matchIdx, 1)[0];
+    activePairs.set(me.id, { partnerId: partner.id, mode });
+    activePairs.set(partner.id, { partnerId: me.id, mode });
+    io.to(me.id).emit('matched', { initiator: true, sharedTags, partnerCountry: partner.country });
+    io.to(partner.id).emit('matched', { initiator: false, sharedTags, partnerCountry: me.country });
   } else {
-    queue.push({ id: socket.id, interests, joinedAt: Date.now() });
+    queue.push(me);
   }
 }
 
-function cleanupUser(socketId) {
-  ['text', 'video'].forEach(mode => {
-    const idx = queues[mode].findIndex(u => u.id === socketId);
-    if (idx !== -1) queues[mode].splice(idx, 1);
+function cleanupUser(id) {
+  ['text', 'video'].forEach(m => {
+    const i = queues[m].findIndex(u => u.id === id);
+    if (i !== -1) queues[m].splice(i, 1);
   });
-
-  const pair = activePairs.get(socketId);
+  const pair = activePairs.get(id);
   if (pair) {
     io.to(pair.partnerId).emit('partner-disconnected');
     activePairs.delete(pair.partnerId);
-    activePairs.delete(socketId);
+    activePairs.delete(id);
   }
 }
 
 io.on('connection', (socket) => {
   io.emit('online-count', io.engine.clientsCount);
 
-  socket.on('find-partner', ({ mode, interests }) => {
+  socket.on('find-partner', (p = {}) => {
     cleanupUser(socket.id);
-    const cleanInterests = Array.isArray(interests)
-      ? interests.map(t => String(t).toLowerCase().trim()).slice(0, 10)
-      : [];
-    findMatch(socket, mode === 'video' ? 'video' : 'text', cleanInterests);
+    const interests = Array.isArray(p.interests)
+      ? p.interests.map(t => String(t).toLowerCase().trim()).filter(Boolean).slice(0, 10) : [];
+    const cc = v => (typeof v === 'string' && /^[A-Za-z]{2}$/.test(v)) ? v.toUpperCase() : '';
+    const premium = isPremiumCode(p.premiumCode); // verified on the server, not trusted from the client
+    findMatch({
+      id: socket.id,
+      interests,
+      country: cc(p.country),
+      premium,
+      wantCountry: premium ? (cc(p.wantCountry) || 'any') : 'any',
+      strict: premium && Boolean(p.strict)
+    }, p.mode === 'video' ? 'video' : 'text');
   });
 
-  // WebRTC Signaling Relays
-  socket.on('webrtc-offer', (offer) => {
-    const pair = activePairs.get(socket.id);
-    if (pair) io.to(pair.partnerId).emit('webrtc-offer', offer);
+  socket.on('webrtc-offer', d => { const p = activePairs.get(socket.id); if (p) io.to(p.partnerId).emit('webrtc-offer', d); });
+  socket.on('webrtc-answer', d => { const p = activePairs.get(socket.id); if (p) io.to(p.partnerId).emit('webrtc-answer', d); });
+  socket.on('webrtc-ice-candidate', d => { const p = activePairs.get(socket.id); if (p) io.to(p.partnerId).emit('webrtc-ice-candidate', d); });
+  socket.on('chat-message', txt => {
+    const p = activePairs.get(socket.id);
+    if (p && typeof txt === 'string' && txt.trim()) io.to(p.partnerId).emit('chat-message', txt.trim().slice(0, 1000));
   });
-
-  socket.on('webrtc-answer', (answer) => {
-    const pair = activePairs.get(socket.id);
-    if (pair) io.to(pair.partnerId).emit('webrtc-answer', answer);
-  });
-
-  socket.on('webrtc-ice-candidate', (candidate) => {
-    const pair = activePairs.get(socket.id);
-    if (pair) io.to(pair.partnerId).emit('webrtc-ice-candidate', candidate);
-  });
-
-  // Chat & Typing Relays
-  socket.on('chat-message', (text) => {
-    const pair = activePairs.get(socket.id);
-    if (!pair || typeof text !== 'string') return;
-    const sanitized = text.trim().slice(0, 1000);
-    if (sanitized) {
-      io.to(pair.partnerId).emit('chat-message', sanitized);
-    }
-  });
-
-  socket.on('typing', (isTyping) => {
-    const pair = activePairs.get(socket.id);
-    if (pair) io.to(pair.partnerId).emit('typing', Boolean(isTyping));
-  });
-
-  // Moderation & Reporting
-  socket.on('report-partner', ({ reason }) => {
-    const pair = activePairs.get(socket.id);
-    if (!pair) return;
-    const count = (reportCounts.get(pair.partnerId) || 0) + 1;
-    reportCounts.set(pair.partnerId, count);
-    console.warn(`[REPORT] User ${pair.partnerId} reported for: ${reason} (Total: ${count})`);
-
-    if (count >= 3) {
-      io.to(pair.partnerId).emit('banned', 'You have been disconnected due to multiple community reports.');
-      io.sockets.sockets.get(pair.partnerId)?.disconnect(true);
-    }
+  socket.on('typing', v => { const p = activePairs.get(socket.id); if (p) io.to(p.partnerId).emit('typing', Boolean(v)); });
+  socket.on('report-partner', () => {
+    const p = activePairs.get(socket.id);
+    if (!p) return;
+    const c = (reportCounts.get(p.partnerId) || 0) + 1;
+    reportCounts.set(p.partnerId, c);
+    if (c >= 3) { io.to(p.partnerId).emit('banned', 'Disconnected due to multiple reports.'); io.sockets.sockets.get(p.partnerId)?.disconnect(true); }
     cleanupUser(socket.id);
   });
-
   socket.on('leave-chat', () => cleanupUser(socket.id));
-
-  socket.on('disconnect', () => {
-    cleanupUser(socket.id);
-    io.emit('online-count', io.engine.clientsCount);
-  });
+  socket.on('disconnect', () => { cleanupUser(socket.id); io.emit('online-count', io.engine.clientsCount); });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`VibeLink server running on http://localhost:${PORT}`));
+server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));
