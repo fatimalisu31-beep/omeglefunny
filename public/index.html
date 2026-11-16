@@ -33,7 +33,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VibeLink — Talk to Strangers, Free Live Video & Text Chat</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
@@ -44,13 +44,14 @@
         extend: {
           colors: {
             brand: {
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
+              400: '#ff7ac8',
+              500: '#ff3cac',
+              600: '#e0198f',
             },
             accent: {
-              500: '#8b5cf6',
-              600: '#7c3aed',
+              400: '#67e8f9',
+              500: '#22d3ee',
+              600: '#0ea5c9',
             }
           }
         }
@@ -58,10 +59,10 @@
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
     body {
-      font-family: 'Inter', sans-serif;
-      background-color: #090d16;
+      font-family: 'Fredoka', 'Inter', sans-serif;
+      background: radial-gradient(900px 500px at 15% -10%, rgba(255,60,172,.22), transparent 60%), radial-gradient(800px 500px at 90% 10%, rgba(34,211,238,.18), transparent 60%), #0b0716;
       color: #f8fafc;
     }
     .scrollbar-thin::-webkit-scrollbar { width: 6px; }
@@ -75,6 +76,14 @@
       0% { transform: scale(0.85); opacity: 0.8; }
       100% { transform: scale(1.6); opacity: 0; }
     }
+    #server-status-pill { display:none !important; }
+    .float-emoji { position:absolute; bottom:-60px; font-size:28px; opacity:.55; pointer-events:none; animation: floatUp linear infinite; }
+    @keyframes floatUp { 0%{transform:translateY(0) rotate(0)} 100%{transform:translateY(-110vh) rotate(360deg)} }
+    @keyframes wiggle { 0%,100%{transform:rotate(-4deg)} 50%{transform:rotate(4deg)} }
+    .wiggle { display:inline-block; animation: wiggle 1.4s ease-in-out infinite; }
+    .neon-text { text-shadow: 0 0 18px rgba(255,60,172,.55); }
+    .glow-btn { box-shadow: 0 0 0 2px rgba(255,255,255,.08), 0 8px 30px rgba(255,60,172,.45); }
+    .pop-btn:active { transform: scale(.85); }
     .pulse-ring {
       animation: pulseRing 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
     }
@@ -107,7 +116,7 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span><strong id="online-count" class="text-white font-semibold">34,812</strong> online</span>
+          <span><strong id="online-count" class="text-white font-semibold">1</strong> online</span>
         </div>
 
         <button onclick="toggleSafetyModal(true)" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors" title="Safety & Guidelines">
@@ -118,19 +127,19 @@
   </header>
 
   <!-- MAIN VIEW 1: LOBBY / LANDING -->
-  <main id="lobby-view" class="flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
-    <div class="max-w-3xl w-full text-center space-y-8">
+  <main id="lobby-view" class="relative overflow-hidden flex-1 flex flex-col items-center justify-center px-4 py-10 sm:py-14">
+    <div class="relative z-10 max-w-3xl w-full text-center space-y-8">
       <div class="space-y-4">
         <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-medium text-brand-400">
           <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-          <span>100% Free • Encrypted WebRTC • AI Moderated</span>
+          <span>100% Free • No signup • AI Moderated • 18+</span>
         </div>
         <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-white leading-[1.1]">
-          Meet someone new <br class="hidden sm:block" />
-          <span class="bg-gradient-to-r from-brand-400 via-sky-300 to-accent-500 bg-clip-text text-transparent">in a single click.</span>
+          Talk to a stranger. <br class="hidden sm:block" />
+          <span class="neon-text bg-gradient-to-r from-brand-400 via-yellow-200 to-accent-400 bg-clip-text text-transparent">Hopefully a funny one. <span class="wiggle">😂</span></span>
         </h1>
         <p class="text-slate-400 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-          Instant random video and text conversations with people around the world. Add shared interests to match with your vibe, or jump straight in.
+          Random video and text chats with people worldwide. Pick a few interests, hit a button, and see who you get. Skip anytime.
         </p>
       </div>
 
@@ -159,12 +168,13 @@
           <!-- Trending Suggested Tags -->
           <div class="flex flex-wrap items-center gap-1.5 pt-1">
             <span class="text-xs text-slate-500 mr-1">Trending:</span>
-            <button type="button" onclick="addSuggestedTag('gaming')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ gaming</button>
-            <button type="button" onclick="addSuggestedTag('music')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ music</button>
-            <button type="button" onclick="addSuggestedTag('movies')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ movies</button>
-            <button type="button" onclick="addSuggestedTag('coding')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ coding</button>
-            <button type="button" onclick="addSuggestedTag('anime')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ anime</button>
-            <button type="button" onclick="addSuggestedTag('travel')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">+ travel</button>
+            <button type="button" onclick="addSuggestedTag('funny')" class="text-xs px-2.5 py-1 rounded-md bg-brand-500/15 hover:bg-brand-500/30 text-brand-400 border border-brand-500/40 transition">😂 funny</button>
+            <button type="button" onclick="addSuggestedTag('gaming')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">🎮 gaming</button>
+            <button type="button" onclick="addSuggestedTag('music')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">🎵 music</button>
+            <button type="button" onclick="addSuggestedTag('movies')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">🍿 movies</button>
+            <button type="button" onclick="addSuggestedTag('coding')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">💻 coding</button>
+            <button type="button" onclick="addSuggestedTag('anime')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">🌸 anime</button>
+            <button type="button" onclick="addSuggestedTag('travel')" class="text-xs px-2.5 py-1 rounded-md bg-slate-800/70 hover:bg-slate-800 text-slate-300 border border-slate-700/60 transition">✈️ travel</button>
           </div>
         </div>
 
@@ -184,7 +194,7 @@
             </div>
           </button>
 
-          <button onclick="startSession('video')" class="group relative flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r from-brand-500 to-accent-600 hover:from-brand-400 hover:to-accent-500 text-white font-semibold text-base transition-all shadow-lg shadow-brand-500/25 hover:-translate-y-0.5">
+          <button onclick="startSession('video')" class="glow-btn group relative flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-gradient-to-r from-brand-500 to-accent-600 hover:from-brand-400 hover:to-accent-500 text-white font-semibold text-base transition-all shadow-lg shadow-brand-500/25 hover:-translate-y-0.5">
             <i data-lucide="video" class="w-5 h-5 text-white group-hover:scale-110 transition-transform"></i>
             <div class="text-left">
               <div>Video Chat</div>
@@ -249,6 +259,8 @@
           </div>
           <p id="stranger-overlay-title" class="text-sm font-semibold text-white">Looking for someone you can chat with...</p>
           <p id="stranger-overlay-sub" class="text-xs text-slate-400 mt-1">Matching based on your interests</p>
+          <p id="wait-joke" class="text-sm text-brand-400 mt-3 min-h-[20px] italic"></p>
+          <button type="button" onclick="popBubble(this)" class="pop-btn mt-3 px-4 py-2 rounded-full bg-slate-900 border border-brand-500/40 text-sm text-white transition">🫧 Pop while you wait: <b id="pop-score">0</b></button>
         </div>
 
         <!-- Top Badges -->
@@ -703,7 +715,11 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
       "What song have you had on repeat this week?",
       "Coffee or tea — and how do you take it?",
       "What's a hobby you've always wanted to try?",
-      "Night owl or early bird?"
+      "Night owl or early bird?",
+      "Would you rather fight 1 horse-sized duck or 100 duck-sized horses? 🦆🐴",
+      "Dare: describe your day using only movie titles 🎬",
+      "What is the weirdest food combo you secretly love? 🍕",
+      "Two truths and a lie. Go! 🤥"
     ];
 
     const simulatedReplies = [
@@ -839,14 +855,12 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
 
     initSocket();
 
-    // Subtle simulated counter fluctuation only when in standalone preview mode
-    setInterval(() => {
-      if (isLiveBackend) return;
-      const el = document.getElementById('online-count');
-      const current = parseInt(el.textContent.replace(/,/g, ''), 10) || 34812;
-      const delta = Math.floor(Math.random() * 19) - 9;
-      el.textContent = Math.max(1200, current + delta).toLocaleString();
-    }, 3500);
+    const waitJokes = ["Untangling the internet…","Asking the pigeons for directions 🐦","Warming up the awkward small talk…","Polishing the 'hi' button ✨","Convincing someone to say hello…","Teaching hamsters to route video 🐹","Checking under the couch for strangers…"];
+    setInterval(() => { const el = document.getElementById('wait-joke'); if (el && chatState === 'searching') el.textContent = waitJokes[Math.floor(Math.random()*waitJokes.length)]; }, 2200);
+    let popCount = 0;
+    function popBubble(btn) { popCount++; document.getElementById('pop-score').textContent = popCount; btn.firstChild.textContent = popCount % 10 === 0 ? '🎉 Nice! Keep popping: ' : '🫧 Pop while you wait: '; }
+    (function floaters() { const m = document.getElementById('lobby-view'); ['😂','👋','🎮','🎵','🍕','✨','🌍','💬','🦄','🔥','🎧','🐸'].forEach((e,i) => { const sp = document.createElement('span'); sp.className = 'float-emoji'; sp.textContent = e; sp.style.left = (i*8+Math.random()*6)+'%'; sp.style.animationDuration = (14+Math.random()*14)+'s'; sp.style.animationDelay = (-Math.random()*20)+'s'; m.prepend(sp); }); })();
+    function blip() { try { const c = new (window.AudioContext||window.webkitAudioContext)(), o = c.createOscillator(), g = c.createGain(); o.type='triangle'; o.frequency.setValueAtTime(520,c.currentTime); o.frequency.exponentialRampToValueAtTime(980,c.currentTime+.12); g.gain.setValueAtTime(.08,c.currentTime); g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.18); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+.2); } catch(e){} }
 
     // ==========================================
     // WEBRTC PEER CONNECTION LOGIC
@@ -1077,6 +1091,7 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
         socket.emit('find-partner', { mode: currentMode, interests });
       } else {
         // Fallback simulation when opened without Node.js server
+        appendSystemMessage('🤖 Live server is offline, so you are chatting with Funny Bot.');
         const delay = 1100 + Math.random() * 1400;
         searchTimeout = setTimeout(() => {
           const matched = interests.length > 0 ? [interests[Math.floor(Math.random() * interests.length)]] : [];
@@ -1086,6 +1101,7 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
     }
 
     function onStrangerConnected(matchedTags) {
+      blip();
       chatState = 'connected';
       resetSkipButton();
 
@@ -1260,7 +1276,7 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
           const reply = isGreeting
             ? "Hey! 👋 How's it going?"
             : simulatedReplies[Math.floor(Math.random() * simulatedReplies.length)];
-          appendMessage('stranger', reply);
+          appendMessage('stranger', '🤖 ' + reply);
         }, sendDelay);
       }, startTypingDelay);
     }
