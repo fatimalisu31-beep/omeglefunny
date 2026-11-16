@@ -1602,5 +1602,54 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
     document.getElementById(modalId).classList.add('hidden');
   }
 </script>
+  <!-- Gender & Country Filter UI Component -->
+<div id="filterSection" class="max-w-md mx-auto my-4 p-4 bg-gray-900 border border-gray-800 rounded-xl text-white shadow-lg">
+  <h3 class="text-sm font-semibold mb-3 text-gray-300 flex items-center justify-between">
+    <span>Match Filters</span>
+    <span class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal">VIP / Standard</span>
+  </h3>
+  
+  <div class="grid grid-cols-2 gap-3">
+    <!-- Gender Filter -->
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Looking for:</label>
+      <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500">
+        <option value="any">Any Gender</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+    </div>
+
+    <!-- Country Filter -->
+    <div>
+      <label class="block text-xs text-gray-400 mb-1">Country:</label>
+      <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500">
+        <option value="any">Worldwide</option>
+        <option value="us">United States</option>
+        <option value="uk">United Kingdom</option>
+        <option value="bd">Bangladesh</option>
+        <option value="in">India</option>
+        <option value="ca">Canada</option>
+      </select>
+    </div>
+  </div>
+
+  <button onclick="applyFilters()" class="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition">
+    Apply Filters & Search
+  </button>
+</div>
+
+<!-- Filter Logic Script -->
+<script>
+  function applyFilters() {
+    const gender = document.getElementById('genderFilter').value;
+    const country = document.getElementById('countryFilter').value;
+    
+    console.log("Filters Applied - Gender:", gender, "Country:", country);
+    
+    // যদি আপনার ব্যাকএন্ড বা Socket.io এ ডেটা পাঠাতে চান, এখানে socket.emit ব্যবহার করতে পারেন
+    alert("Filters applied successfully! Finding match...");
+  }
+</script>
 </body>
 </html>
