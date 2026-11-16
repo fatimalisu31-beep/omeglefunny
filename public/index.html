@@ -1,38 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
-<!-- Gender & Country Match Filters -->
-<div id="filterSection" class="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-4">
-    <div class="flex items-center justify-between mb-2">
-        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Match Filters</span>
-        <span id="filterStatus" class="text-[10px] bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">Active</span>
-    </div>
-    <div class="grid grid-cols-2 gap-2">
-        <div>
-            <label class="block text-[11px] text-gray-400 mb-1">Looking for:</label>
-            <select id="genderFilter" class="w-full bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg p-2 focus:outline-none focus:border-blue-500">
-                <option value="any">Any Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-[11px] text-gray-400 mb-1">Country:</label>
-            <select id="countryFilter" class="w-full bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg p-2 focus:outline-none focus:border-blue-500">
-                <option value="any">Worldwide</option>
-                <option value="us">United States</option>
-                <option value="uk">United Kingdom</option>
-                <option value="bd">Bangladesh</option>
-                <option value="in">India</option>
-                <option value="ca">Canada</option>
-            </select>
-        </div>
-    </div>
-    <button onclick="applyFilters()" class="w-full mt-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg transition text-white">
-        Apply Filters
-    </button>
-</div>
-    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>VibeLink - Talk to Strangers, Free Live Video & Text Chat</title>
@@ -59,18 +27,10 @@
     <meta property="og:description" content="Connect instantly with random people worldwide. Free random video chat, live text chat, and interest matching." />
     <meta property="og:image" content="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop" />
 
-    <!-- Twitter Card Tags -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="VibeLink - Free Live Video & Text Chat" />
-    <meta name="twitter:description" content="Connect instantly with random people worldwide. Free random video chat and live text chat." />
-    <meta name="twitter:image" content="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop" />
-
     <!-- Tailwind CSS & Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between">
 
@@ -81,134 +41,43 @@
             <p class="text-xs text-gray-400">Talk to strangers worldwide instantly</p>
         </header>
 
-        <!-- Gender & Country Filter UI Component -->
-        <div id="filterSection" class="w-full max-w-md mb-6 p-4 bg-gray-900 border border-gray-800 rounded-xl shadow-lg">
-          <h3 class="text-sm font-semibold mb-3 text-gray-300 flex items-center justify-between">
-            <span>Match Filters</span>
-            <span id="filterStatus" class="text-xs bg-gray-700 px-2 py-0.5 rounded text-gray-300 font-normal">Filters Active</span>
-          </h3>
-          
-          <div class="grid grid-cols-2 gap-3">
-            <!-- Gender Filter -->
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Looking for:</label>
-              <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500 text-white">
-                <option value="any">Any Gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+        <!-- VIEW 1: Landing / Filter & Start Screen -->
+        <div id="homeView" class="w-full max-w-md p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl text-center">
+            <h3 class="text-sm font-semibold mb-4 text-gray-300 flex items-center justify-between">
+                <span>Match Filters</span>
+                <span id="filterStatus" class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal">Ready</span>
+            </h3>
+            
+            <div class="grid grid-cols-2 gap-3 mb-6 text-left">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Looking for:</label>
+                    <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
+                        <option value="any">Any Gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Country:</label>
+                    <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
+                        <option value="any">Worldwide</option>
+                        <option value="us">United States</option>
+                        <option value="uk">United Kingdom</option>
+                        <option value="bd">Bangladesh</option>
+                        <option value="in">India</option>
+                        <option value="ca">Canada</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Country Filter -->
-            <div>
-              <label class="block text-xs text-gray-400 mb-1">Country:</label>
-              <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500 text-white">
-                <option value="any">Worldwide</option>
-                <option value="us">United States</option>
-                <option value="uk">United Kingdom</option>
-                <option value="bd">Bangladesh</option>
-                <option value="in">India</option>
-                <option value="ca">Canada</option>
-              </select>
-            </div>
-          </div>
-
-          <button onclick="applyFilters()" class="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition text-white">
-            Apply Filters
-          </button>
+            <button onclick="startChat()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-base font-bold transition text-white shadow-lg shadow-blue-600/30">
+                Start Random Chat
+            </button>
         </div>
 
-        <!-- Placeholder for Chat/Video Interface -->
-        <div class="w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-xl p-6 text-center shadow-xl">
-            <p class="text-gray-400 mb-4">Video & Text Chat Interface is active.</p>
-            <div class="flex justify-center gap-4">
-                <button onclick="startChat()" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition text-white">Start Chat</button>
-                <button onclick="skipChat()" class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold transition text-white">Stop / Skip</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer & Legal Policies Section -->
-    <footer class="w-full py-6 mt-10 bg-gray-900 text-gray-400 text-center text-sm border-t border-gray-800">
-      <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p>&copy; 2026 VibeLink (OmegleFunny). All rights reserved.</p>
-        <div class="flex gap-6">
-          <button onclick="openModal('privacyModal')" class="hover:text-white transition">Privacy Policy</button>
-          <button onclick="openModal('termsModal')" class="hover:text-white transition">Terms of Service</button>
-        </div>
-      </div>
-    </footer>
-
-    <!-- Privacy Policy Modal -->
-    <div id="privacyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
-        <h3 class="text-xl font-bold mb-4 text-white">Privacy Policy</h3>
-        <p class="text-sm mb-3">At VibeLink, accessible from omeglefunny.onrender.com, your privacy is a top priority. This Privacy Policy document outlines the types of information collected and recorded by VibeLink and how we use it.</p>
-        <p class="text-sm mb-3">We do not store your video or audio streams on our servers. All video and text chats are peer-to-peer (WebRTC) and encrypted between users.</p>
-        <p class="text-sm mb-4">We use third-party analytics (like Google Analytics) to understand visitor traffic and improve user experience.</p>
-        <button onclick="closeModal('privacyModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
-      </div>
-    </div>
-
-    <!-- Terms of Service Modal -->
-    <div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
-        <h3 class="text-xl font-bold mb-4 text-white">Terms of Service</h3>
-        <p class="text-sm mb-3">By accessing VibeLink, you agree to comply with these terms of service. You must be at least 18 years old or have parental consent to use this video chat platform.</p>
-        <p class="text-sm mb-3"><strong>Rules:</strong> No nudity, harassment, hate speech, or commercial solicitation is allowed. Violators will be permanently banned from the platform.</p>
-        <p class="text-sm mb-4">The service is provided "as is" without warranties of any kind.</p>
-        <button onclick="closeModal('termsModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
-      </div>
-    </div>
-
-    <!-- Functional Scripts -->
-    <script>
-      const socket = io();
-
-      let currentFilters = {
-        gender: 'any',
-        country: 'any'
-      };
-
-      function applyFilters() {
-        currentFilters.gender = document.getElementById('genderFilter').value;
-        currentFilters.country = document.getElementById('countryFilter').value;
-        
-        const statusBadge = document.getElementById('filterStatus');
-        statusBadge.textContent = "Saved ✓";
-        statusBadge.className = "text-xs bg-green-600 px-2 py-0.5 rounded text-white font-normal";
-
-        // ব্যাকএন্ডে বা সার্ভারে ফিল্টার ডেটা পাঠানোর জন্য
-        socket.emit('set-filters', currentFilters);
-
-        setTimeout(() => {
-          statusBadge.textContent = "Filters Active";
-          statusBadge.className = "text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal";
-        }, 2000);
-      }
-
-      function startChat() {
-        // চ্যাট শুরু করার সময় ফিল্টারসহ রিকোয়েস্ট পাঠানো
-        socket.emit('start-searching', currentFilters);
-        alert("Searching for a match with your filters...");
-      }
-
-      function skipChat() {
-        socket.emit('skip-chat');
-        alert("Skipped. Finding next stranger...");
-      }
-
-      function openModal(modalId) {
-        document.getElementById(modalId).classList.remove('hidden');
-      }
-      
-      function closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-      }
-
-      document.addEventListener("DOMContentLoaded", () => {
-        console.log("VibeLink system ready with filters.");
-      });
-    </script>
-</body>
-</html>
+        <!-- VIEW 2: Active Chat / Video Interface (Initially Hidden) -->
+        <div id="chatView" class="hidden w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Video Box -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[400px]">
+                <div class="flex justify-between items-center text-xs text-gray-400">
+                    <span class="bg-red-500
