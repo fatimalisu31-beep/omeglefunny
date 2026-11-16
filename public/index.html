@@ -34,80 +34,89 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between">
 
-    <!-- Main Content Container -->
+    <!-- Top Header & Live Status -->
+    <header class="w-full py-4 px-6 flex justify-between items-center border-b border-gray-800 bg-gray-900/50">
+        <div class="flex items-center gap-2">
+            <span class="text-xl font-extrabold text-blue-500 tracking-wider">VibeLink</span>
+            <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">LIVE P2P</span>
+        </div>
+        <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1.5 text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live Server Connected
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Original Layout + Filter Box Added) -->
     <div class="flex-grow flex flex-col items-center justify-center p-4">
-        <header class="text-center mb-6">
-            <h1 class="text-3xl font-extrabold text-blue-500 tracking-wider">VibeLink</h1>
-            <p class="text-xs text-gray-400">Talk to strangers worldwide instantly</p>
-        </header>
-
-        <!-- VIEW 1: Landing / Filter & Start Screen -->
-        <div id="homeView" class="w-full max-w-md p-6 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl text-center">
-            <h3 class="text-sm font-semibold mb-4 text-gray-300 flex items-center justify-between">
-                <span>Match Filters</span>
-                <span id="filterStatus" class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal">Ready</span>
-            </h3>
-            
-            <div class="grid grid-cols-2 gap-3 mb-6 text-left">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Looking for:</label>
-                    <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
-                        <option value="any">Any Gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1">Country:</label>
-                    <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
-                        <option value="any">Worldwide</option>
-                        <option value="us">United States</option>
-                        <option value="uk">United Kingdom</option>
-                        <option value="bd">Bangladesh</option>
-                        <option value="in">India</option>
-                        <option value="ca">Canada</option>
-                    </select>
-                </div>
+        
+        <!-- Filter Controls Bar (Clean & Compact) -->
+        <div class="w-full max-w-5xl mb-4 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-gray-400">Filters:</span>
+                <select id="genderFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
+                    <option value="any">Any Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+                <select id="countryFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
+                    <option value="any">Worldwide</option>
+                    <option value="us">United States</option>
+                    <option value="uk">United Kingdom</option>
+                    <option value="bd">Bangladesh</option>
+                    <option value="in">India</option>
+                    <option value="ca">Canada</option>
+                </select>
             </div>
-
-            <button onclick="startChat()" class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-base font-bold transition text-white shadow-lg shadow-blue-600/30">
-                Start Random Chat
+            <button onclick="applyFilters()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg text-white transition">
+                Apply Filters
             </button>
         </div>
 
-        <!-- VIEW 2: Active Chat / Video Interface (Initially Hidden) -->
-        <div id="chatView" class="hidden w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Video Box -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[400px]">
+        <!-- Main Video & Chat Grid Layout -->
+        <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            <!-- Video Box (Left) -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[450px] shadow-xl">
                 <div class="flex justify-between items-center text-xs text-gray-400">
-                    <span class="bg-red-500/20 text-red-400 px-2 py-1 rounded">Stranger</span>
-                    <span id="matchingStatus">Searching...</span>
+                    <span class="bg-red-500/20 text-red-400 px-2.5 py-1 rounded font-medium">Stranger</span>
+                    <span id="matchingStatus" class="text-gray-400">Searching...</span>
                 </div>
+                
                 <div class="flex flex-col items-center justify-center flex-grow">
-                    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-sm text-gray-300">Connecting to a stranger...</p>
+                    <div class="w-14 h-14 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-sm text-gray-300 font-medium">Connecting to a stranger...</p>
                 </div>
-                <div class="flex justify-center gap-2">
-                    <button onclick="stopChat()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-xs font-semibold rounded-lg text-white">Stop / Skip</button>
+
+                <div class="flex justify-center">
+                    <button onclick="skipChat()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-xs font-bold rounded-xl text-white transition shadow-lg shadow-red-600/20">
+                        Stop / Skip
+                    </button>
                 </div>
             </div>
 
-            <!-- Chat Box -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[400px]">
-                <div class="text-xs font-semibold text-gray-400 border-b border-gray-800 pb-2">Live Text Chat</div>
+            <!-- Chat Box (Right) -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[450px] shadow-xl">
+                <div class="text-xs font-semibold text-gray-400 border-b border-gray-800 pb-2 flex justify-between items-center">
+                    <span>Live Text Chat</span>
+                    <span class="text-[10px] text-gray-500">Secure P2P</span>
+                </div>
+                
                 <div id="chatMessages" class="flex-grow overflow-y-auto my-2 p-2 text-sm text-gray-300 space-y-2">
                     <p class="text-gray-500 italic">Connected to VibeLink server. Say hi!</p>
                 </div>
+
                 <div class="flex gap-2">
-                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-grow bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-                    <button onclick="sendMessage()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white">Send</button>
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-grow bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                    <button onclick="sendMessage()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white transition">Send</button>
                 </div>
             </div>
+
         </div>
     </div>
 
     <!-- Footer & Legal Policies Section -->
-    <footer class="w-full py-6 mt-10 bg-gray-900 text-gray-400 text-center text-sm border-t border-gray-800">
+    <footer class="w-full py-6 bg-gray-900 text-gray-400 text-center text-sm border-t border-gray-800">
       <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
         <p>&copy; 2026 VibeLink (OmegleFunny). All rights reserved.</p>
         <div class="flex gap-6">
@@ -119,7 +128,7 @@
 
     <!-- Privacy Policy Modal -->
     <div id="privacyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
+      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto shadow-2xl">
         <h3 class="text-xl font-bold mb-4 text-white">Privacy Policy</h3>
         <p class="text-sm mb-3">At VibeLink, your privacy is our top priority. All video and text chats are peer-to-peer and encrypted.</p>
         <button onclick="closeModal('privacyModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
@@ -128,34 +137,27 @@
 
     <!-- Terms of Service Modal -->
     <div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
+      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto shadow-2xl">
         <h3 class="text-xl font-bold mb-4 text-white">Terms of Service</h3>
         <p class="text-sm mb-3">You must be at least 18 years old to use this video chat platform. No harassment or nudity allowed.</p>
         <button onclick="closeModal('termsModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
       </div>
     </div>
 
-    <!-- Application Script -->
+    <!-- Functional Scripts -->
     <script>
       const socket = io();
 
-      function startChat() {
+      function applyFilters() {
         const gender = document.getElementById('genderFilter').value;
         const country = document.getElementById('countryFilter').value;
-
-        // Hide Home/Filter View and Show Chat View
-        document.getElementById('homeView').classList.add('hidden');
-        document.getElementById('chatView').classList.remove('hidden');
-
-        // Send filter info to backend socket
-        socket.emit('start-searching', { gender, country });
+        socket.emit('set-filters', { gender, country });
+        alert("Filters applied successfully!");
       }
 
-      function stopChat() {
-        // Return back to Home/Filter View
-        document.getElementById('chatView').classList.add('hidden');
-        document.getElementById('homeView').classList.remove('hidden');
+      function skipChat() {
         socket.emit('skip-chat');
+        alert("Skipped. Finding next stranger...");
       }
 
       function sendMessage() {
