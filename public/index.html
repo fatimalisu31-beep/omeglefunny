@@ -137,4 +137,145 @@
                             <option value="male">Male</option>
                             <option value="female">Female</option>
                         </select>
-                        <select id="countryFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-30
+                        <select id="countryFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
+                            <option value="any">Worldwide</option>
+                            <option value="us">United States</option>
+                            <option value="uk">United Kingdom</option>
+                            <option value="bd">Bangladesh</option>
+                            <option value="in">India</option>
+                            <option value="ca">Canada</option>
+                        </select>
+                        <button onclick="applyFilters()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-xl text-white transition shadow-md shadow-blue-600/20">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Box Container (Exact Original Format) -->
+                <div class="bg-gray-900/80 backdrop-blur border border-gray-800/80 rounded-2xl p-4 flex flex-col justify-between h-[456px] shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-gray-800/80 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            <span class="text-xs font-semibold text-gray-300 tracking-wide">Looking for someone you can chat with...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Messages Area -->
+                    <div id="chatMessages" class="flex-grow overflow-y-auto my-3 p-3 text-sm text-gray-300 space-y-3 bg-gray-950/40 rounded-xl border border-gray-800/50">
+                        <div class="inline-block bg-blue-600/10 border border-blue-500/20 text-blue-300 px-3 py-2 rounded-xl text-xs">
+                            Looking for someone you can chat with. Say hi!
+                        </div>
+                    </div>
+
+                    <!-- Chat Input & Stop/Send Controls -->
+                    <div class="flex items-center gap-3 pt-2">
+                        <button onclick="stopChat()" class="px-5 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-xs font-bold rounded-xl text-white transition shadow-lg shadow-red-600/20 flex flex-col items-center justify-center min-w-[75px]">
+                            <span>Stop</span>
+                            <span class="text-[9px] opacity-75 font-normal">Esc</span>
+                        </button>
+                        
+                        <div class="relative flex-grow flex items-center">
+                            <input type="text" id="messageInput" placeholder="Type a message..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition pr-10" />
+                            <button onclick="insertEmoji()" class="absolute right-3 text-gray-400 hover:text-white transition">
+                                <i data-lucide="smile" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <button onclick="sendMessage()" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white transition shadow-lg shadow-blue-600/20 flex items-center gap-1.5">
+                            <span>Send</span>
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer & Legal Policies Section -->
+    <footer class="w-full py-4 bg-gray-950 border-t border-gray-900 text-gray-500 text-xs">
+      <div class="max-w-[1400px] mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <p>&copy; 2026 VibeLink (OmegleFunny). All rights reserved.</p>
+        <div class="flex gap-6">
+          <button onclick="openModal('privacyModal')" class="hover:text-gray-300 transition">Privacy Policy</button>
+          <button onclick="openModal('termsModal')" class="hover:text-gray-300 transition">Terms of Service</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4">
+      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-2xl border border-gray-800 relative max-h-[80vh] overflow-y-auto shadow-2xl">
+        <h3 class="text-xl font-bold mb-4 text-white">Privacy Policy</h3>
+        <p class="text-sm mb-3 text-gray-300">At VibeLink, your privacy is our top priority. All video and text chats are peer-to-peer and encrypted between users.</p>
+        <button onclick="closeModal('privacyModal')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition">Close</button>
+      </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 backdrop-blur-sm p-4">
+      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-2xl border border-gray-800 relative max-h-[80vh] overflow-y-auto shadow-2xl">
+        <h3 class="text-xl font-bold mb-4 text-white">Terms of Service</h3>
+        <p class="text-sm mb-3 text-gray-300">You must be at least 18 years old to use this video chat platform. No harassment, nudity, or hate speech allowed.</p>
+        <button onclick="closeModal('termsModal')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition">Close</button>
+      </div>
+    </div>
+
+    <!-- Initialization & Scripts -->
+    <script>
+      lucide.createIcons();
+      const socket = io();
+
+      function applyFilters() {
+        const gender = document.getElementById('genderFilter').value;
+        const country = document.getElementById('countryFilter').value;
+        socket.emit('set-filters', { gender, country });
+        
+        // Visual feedback
+        const btn = event.target;
+        const oldText = btn.textContent;
+        btn.textContent = "Saved ✓";
+        btn.classList.add('bg-green-600');
+        setTimeout(() => {
+          btn.textContent = oldText;
+          btn.classList.remove('bg-green-600');
+        }, 2000);
+      }
+
+      function stopChat() {
+        socket.emit('skip-chat');
+        const chatBox = document.getElementById('chatMessages');
+        chatBox.innerHTML += `<div class="text-amber-400 text-xs italic">Skipped. Finding next stranger...</div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const msg = input.value.trim();
+        if(!msg) return;
+
+        const chatBox = document.getElementById('chatMessages');
+        chatBox.innerHTML += `<div class="text-right"><span class="inline-block bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs max-w-[80%] text-left">${msg}</span></div>`;
+        input.value = '';
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        socket.emit('chat-message', msg);
+      }
+
+      function insertEmoji() {
+        const input = document.getElementById('messageInput');
+        input.value += "😊 ";
+        input.focus();
+      }
+
+      function openModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+      }
+      
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+      }
+    </script>
+</body>
+</html>
