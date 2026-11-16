@@ -597,7 +597,18 @@
         // TURN servers are added automatically from /api/turn (see server.js) so passwords never live in this file
       ]
     };
-    fetch('/api/turn').then(r => r.json()).then(list => { if (Array.isArray(list) && list.length) RTC_CONFIG.iceServers.push(...list); }).catch(() => {});
+    function hasTurnServer() { return RTC_CONFIG.iceServers.some(x => String(x.urls).includes('turn')); }
+    function loadTurn() {
+      return fetch('/api/turn', { cache: 'no-store' }).then(r => r.json()).then(list => {
+        if (Array.isArray(list) && list.length && !hasTurnServer()) RTC_CONFIG.iceServers.push(...list);
+      }).catch(() => {});
+    }
+    let turnPromise = loadTurn();
+    // Before a video call starts, make sure TURN credentials are loaded (retry if the first try failed).
+    async function ensureTurn() {
+      if (!hasTurnServer()) turnPromise = loadTurn();
+      await Promise.race([turnPromise, new Promise(r => setTimeout(r, 4000))]);
+    }
 
     // ==========================================
     // APPLICATION STATE
@@ -940,7 +951,9 @@
         if (pc !== peerConnection) return;
         clearTimeout(disconnectTimer);
         if (pc.connectionState === 'failed') {
-          if (chatState === 'connected') endConversation('Video connection failed. Try "Find New Stranger".');
+          // Keep the text chat alive; the status line on the video panel explains the problem.
+          document.getElementById('p2p-badge').classList.add('hidden');
+          document.getElementById('p2p-badge').classList.remove('flex');
         } else if (pc.connectionState === 'disconnected') {
           // mobile networks blip often; give it a few seconds to recover before giving up
           disconnectTimer = setTimeout(() => {
@@ -1079,6 +1092,7 @@
         videoPanel.classList.remove('hidden');
         videoPanel.classList.add('flex');
         await initLocalMedia();
+        await ensureTurn();
         startStrangerCanvasAnimation();
         startAIModeration();
       } else {
@@ -1109,9 +1123,9 @@
       document.getElementById('wait-extras').classList.remove('hidden');
       clearAllTimers();
       closePeerConnection();
+      chatState = 'searching';
       resetSkipButton();
       chatTranscript = [];
-      chatState = 'searching';
 
       document.getElementById('messages-container').innerHTML = '';
       document.getElementById('disconnected-bar').classList.add('hidden');
@@ -1447,6 +1461,7 @@
       }
       videoEl.classList.add('hidden');
       fallbackEl.classList.remove('hidden');
+      document.getElementById('local-camera-msg').textContent = '📵 Camera/mic blocked or not found';
       appendSystemMessage('📵 Camera/mic blocked. Allow access in your browser (needs HTTPS). You can still see the stranger.');
     }
 

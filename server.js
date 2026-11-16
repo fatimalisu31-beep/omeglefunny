@@ -31,20 +31,50 @@ app.post('/api/premium/verify', (req, res) => {
 // Option 1 (Metered.ca): set METERED_DOMAIN=yourapp.metered.live and METERED_API_KEY=xxxx
 // Option 2 (any TURN, e.g. Twilio/coturn): set TURN_URL=turn:host:3478,turns:host:443?transport=tcp  TURN_USER=...  TURN_PASS=...
 let turnCache = { at: 0, list: [] };
+let turnDebug = { source: 'none', ok: false, detail: 'not requested yet' };
+
+async function loadTurn() {
+  // Cache only successful, non-empty results so a temporary failure is retried on the next request.
+  if (turnCache.list.length && Date.now() - turnCache.at < 10 * 60 * 1000) return turnCache.list;
+  let list = [];
+  const domain = (process.env.METERED_DOMAIN || '').trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const apiKey = (process.env.METERED_API_KEY || '').trim();
+  if (domain && apiKey) {
+    try {
+      const r = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(apiKey)}`);
+      if (r.ok) {
+        list = await r.json();
+        turnDebug = { source: 'metered', ok: Array.isArray(list) && list.length > 0, detail: 'HTTP ' + r.status };
+      } else {
+        turnDebug = { source: 'metered', ok: false, detail: 'Metered replied HTTP ' + r.status + ' (wrong API key or domain? Use the TURN Server key, not the Realtime Messaging key)' };
+        console.log('TURN: Metered replied', r.status);
+      }
+    } catch (e) {
+      turnDebug = { source: 'metered', ok: false, detail: 'request failed: ' + e.message };
+      console.log('TURN: request failed', e.message);
+    }
+  } else if (process.env.TURN_URL) {
+    list = [{ urls: process.env.TURN_URL.split(',').map(u => u.trim()), username: process.env.TURN_USER, credential: process.env.TURN_PASS }];
+    turnDebug = { source: 'custom', ok: true, detail: 'TURN_URL set' };
+  } else {
+    turnDebug = { source: 'none', ok: false, detail: 'METERED_DOMAIN / METERED_API_KEY (or TURN_URL) not set on this server' };
+  }
+  list = Array.isArray(list) ? list : [];
+  if (list.length) turnCache = { at: Date.now(), list };
+  return list;
+}
+
 app.get('/api/turn', async (req, res) => {
   res.set('Cache-Control', 'no-store');
-  try {
-    if (Date.now() - turnCache.at < 10 * 60 * 1000) return res.json(turnCache.list);
-    let list = [];
-    if (process.env.METERED_DOMAIN && process.env.METERED_API_KEY) {
-      const r = await fetch(`https://${process.env.METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${process.env.METERED_API_KEY}`);
-      if (r.ok) list = await r.json();
-    } else if (process.env.TURN_URL) {
-      list = [{ urls: process.env.TURN_URL.split(',').map(u => u.trim()), username: process.env.TURN_USER, credential: process.env.TURN_PASS }];
-    }
-    turnCache = { at: Date.now(), list: Array.isArray(list) ? list : [] };
-    res.json(turnCache.list);
-  } catch (e) { res.json([]); }
+  try { res.json(await loadTurn()); } catch (e) { res.json([]); }
+});
+
+// Safe diagnostic page (never shows passwords): open /api/turn-status in a browser.
+app.get('/api/turn-status', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const list = await loadTurn().catch(() => []);
+  const urls = list.flatMap(s => [].concat(s.urls || []));
+  res.json({ ...turnDebug, servers: list.length, hasTurnRelay: urls.some(u => /^turns?:/i.test(u)) });
 });
 
 // ---------- MATCHING ----------
