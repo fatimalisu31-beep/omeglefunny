@@ -1559,5 +1559,48 @@ server.listen(process.env.PORT || 3000, () => console.log('VibeLink Live'));</pr
     }
   });
 </script>
+
+  <!-- Footer & Legal Policies Section -->
+<footer class="w-full py-6 mt-10 bg-gray-900 text-gray-400 text-center text-sm border-t border-gray-800">
+  <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <p>&copy; 2026 VibeLink (OmegleFunny). All rights reserved.</p>
+    <div class="flex gap-6">
+      <button onclick="openModal('privacyModal')" class="hover:text-white transition">Privacy Policy</button>
+      <button onclick="openModal('termsModal')" class="hover:text-white transition">Terms of Service</button>
+    </div>
+  </div>
+</footer>
+
+<!-- Privacy Policy Modal -->
+<div id="privacyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
+  <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
+    <h3 class="text-xl font-bold mb-4 text-white">Privacy Policy</h3>
+    <p class="text-sm mb-3">At VibeLink, accessible from omeglefunny.onrender.com, your privacy is a top priority. This Privacy Policy document outlines the types of information collected and recorded by VibeLink and how we use it.</p>
+    <p class="text-sm mb-3">We do not store your video or audio streams on our servers. All video and text chats are peer-to-peer (WebRTC) and encrypted between users.</p>
+    <p class="text-sm mb-4">We use third-party analytics (like Google Analytics) to understand visitor traffic and improve user experience.</p>
+    <button onclick="closeModal('privacyModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
+  </div>
+</div>
+
+<!-- Terms of Service Modal -->
+<div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
+  <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto">
+    <h3 class="text-xl font-bold mb-4 text-white">Terms of Service</h3>
+    <p class="text-sm mb-3">By accessing VibeLink, you agree to comply with these terms of service. You must be at least 18 years old or have parental consent to use this video chat platform.</p>
+    <p class="text-sm mb-3"><strong>Rules:</strong> No nudity, harassment, hate speech, or commercial solicitation is allowed. Violators will be permanently banned from the platform.</p>
+    <p class="text-sm mb-4">The service is provided "as is" without warranties of any kind.</p>
+    <button onclick="closeModal('termsModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
+  </div>
+</div>
+
+<!-- Modal Script -->
+<script>
+  function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+  }
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+  }
+</script>
 </body>
 </html>
