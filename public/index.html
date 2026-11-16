@@ -32,152 +32,109 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between">
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between selection:bg-blue-600 selection:text-white">
 
-    <!-- Top Header & Live Status -->
-    <header class="w-full py-4 px-6 flex justify-between items-center border-b border-gray-800 bg-gray-900/50">
-        <div class="flex items-center gap-2">
-            <span class="text-xl font-extrabold text-blue-500 tracking-wider">VibeLink</span>
-            <span class="text-[10px] bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/30">LIVE P2P</span>
+    <!-- Top Header Navbar (Exact Original Format) -->
+    <header class="w-full py-3 px-6 flex justify-between items-center border-b border-gray-900 bg-gray-950/80 backdrop-blur-md z-20">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 rounded-xl shadow-lg shadow-blue-500/20">
+                <span class="w-2.5 h-2.5 rounded-full bg-white animate-pulse"></span>
+                <span class="text-sm font-extrabold text-white tracking-wider">VibeLink</span>
+            </div>
+            <span class="text-[10px] font-medium bg-gray-900 text-gray-400 px-2.5 py-1 rounded-lg border border-gray-800">LIVE P2P</span>
         </div>
-        <div class="flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1.5 text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20">
-                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Live Server Connected
-            </span>
+        
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-gray-900 px-3 py-1.5 rounded-full border border-gray-800 text-xs">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-gray-300 font-medium">Live Server Connected</span>
+            </div>
+            <div class="flex items-center gap-2 bg-gray-900 px-3 py-1.5 rounded-full border border-gray-800 text-xs">
+                <span class="text-blue-400 font-bold">1</span>
+                <span class="text-gray-400">online</span>
+            </div>
+            <div class="p-1.5 bg-gray-900 rounded-full border border-gray-800 text-gray-400">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
         </div>
     </header>
 
-    <!-- Main Workspace (Original Layout + Filter Box Added) -->
-    <div class="flex-grow flex flex-col items-center justify-center p-4">
-        
-        <!-- Filter Controls Bar (Clean & Compact) -->
-        <div class="w-full max-w-5xl mb-4 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-semibold text-gray-400">Filters:</span>
-                <select id="genderFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
-                    <option value="any">Any Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                </select>
-                <select id="countryFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
-                    <option value="any">Worldwide</option>
-                    <option value="us">United States</option>
-                    <option value="uk">United Kingdom</option>
-                    <option value="bd">Bangladesh</option>
-                    <option value="in">India</option>
-                    <option value="ca">Canada</option>
-                </select>
-            </div>
-            <button onclick="applyFilters()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg text-white transition">
-                Apply Filters
-            </button>
-        </div>
-
-        <!-- Main Video & Chat Grid Layout -->
-        <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Main Workspace Grid Layout -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-[1400px] grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
             
-            <!-- Video Box (Left) -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[450px] shadow-xl">
-                <div class="flex justify-between items-center text-xs text-gray-400">
-                    <span class="bg-red-500/20 text-red-400 px-2.5 py-1 rounded font-medium">Stranger</span>
-                    <span id="matchingStatus" class="text-gray-400">Searching...</span>
-                </div>
+            <!-- Left Column: Video Boxes (Stranger + You) -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
                 
-                <div class="flex flex-col items-center justify-center flex-grow">
-                    <div class="w-14 h-14 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="text-sm text-gray-300 font-medium">Connecting to a stranger...</p>
+                <!-- Stranger Video Box -->
+                <div class="bg-gray-900/80 backdrop-blur border border-gray-800/80 rounded-2xl p-4 flex flex-col justify-between h-[360px] shadow-2xl relative overflow-hidden group">
+                    <div class="flex justify-between items-center z-10">
+                        <span class="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs px-2.5 py-1 rounded-lg font-medium flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Stranger
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <button class="p-1.5 bg-gray-800/80 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition">
+                                <i data-lucide="volume-2" class="w-4 h-4"></i>
+                            </button>
+                            <button class="flex items-center gap-1 px-2.5 py-1.5 bg-gray-800/80 hover:bg-gray-800 rounded-lg text-xs text-gray-400 hover:text-white transition">
+                                <i data-lucide="flag" class="w-3.5 h-3.5"></i> Report
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center justify-center flex-grow z-10">
+                        <div class="w-12 h-12 border-3 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-3"></div>
+                        <p class="text-sm font-medium text-gray-200">Looking for someone you can chat with...</p>
+                        <p class="text-xs text-gray-500 mt-1">Matching with a random stranger worldwide</p>
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-50"></div>
                 </div>
 
-                <div class="flex justify-center">
-                    <button onclick="skipChat()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-xs font-bold rounded-xl text-white transition shadow-lg shadow-red-600/20">
-                        Stop / Skip
-                    </button>
+                <!-- Your Video Box -->
+                <div class="bg-gray-900/80 backdrop-blur border border-gray-800/80 rounded-2xl p-4 flex flex-col justify-between h-[220px] shadow-2xl relative">
+                    <div class="flex justify-between items-center">
+                        <span class="bg-gray-800 text-gray-300 text-xs px-2.5 py-1 rounded-lg font-medium">You</span>
+                        <span class="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-md">AI Guard On</span>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center flex-grow">
+                        <div class="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/30 flex items-center justify-center text-blue-400 mb-2">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <p class="text-xs font-medium text-gray-300">Camera Turned Off</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">Grant browser permission to use your webcam</p>
+                    </div>
+
+                    <div class="flex justify-center items-center gap-2 pt-2 border-t border-gray-800/60">
+                        <button class="p-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-gray-300 transition"><i data-lucide="mic" class="w-4 h-4"></i></button>
+                        <button class="p-2 bg-red-600/20 border border-red-500/30 hover:bg-red-600/30 rounded-xl text-red-400 transition"><i data-lucide="video-off" class="w-4 h-4"></i></button>
+                        <button class="p-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-gray-300 transition"><i data-lucide="monitor" class="w-4 h-4"></i></button>
+                        <button class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs text-gray-300 transition"><i data-lucide="sliders" class="w-3.5 h-3.5"></i> Normal</button>
+                    </div>
                 </div>
+
             </div>
 
-            <!-- Chat Box (Right) -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex flex-col justify-between h-[450px] shadow-xl">
-                <div class="text-xs font-semibold text-gray-400 border-b border-gray-800 pb-2 flex justify-between items-center">
-                    <span>Live Text Chat</span>
-                    <span class="text-[10px] text-gray-500">Secure P2P</span>
-                </div>
+            <!-- Right Column: Chat Box, Icebreakers & Integrated Filters -->
+            <div class="lg:col-span-7 flex flex-col gap-4">
                 
-                <div id="chatMessages" class="flex-grow overflow-y-auto my-2 p-2 text-sm text-gray-300 space-y-2">
-                    <p class="text-gray-500 italic">Connected to VibeLink server. Say hi!</p>
-                </div>
+                <!-- Top Action Bar (Icebreakers & Lobby & Match Filters) -->
+                <div class="bg-gray-900/80 backdrop-blur border border-gray-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+                    <div class="flex items-center gap-2">
+                        <button class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-medium rounded-xl transition">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Icebreaker
+                        </button>
+                        <button class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium rounded-xl transition">
+                            <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i> Lobby
+                        </button>
+                    </div>
 
-                <div class="flex gap-2">
-                    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-grow bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-                    <button onclick="sendMessage()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white transition">Send</button>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Footer & Legal Policies Section -->
-    <footer class="w-full py-6 bg-gray-900 text-gray-400 text-center text-sm border-t border-gray-800">
-      <div class="max-w-4xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p>&copy; 2026 VibeLink (OmegleFunny). All rights reserved.</p>
-        <div class="flex gap-6">
-          <button onclick="openModal('privacyModal')" class="hover:text-white transition">Privacy Policy</button>
-          <button onclick="openModal('termsModal')" class="hover:text-white transition">Terms of Service</button>
-        </div>
-      </div>
-    </footer>
-
-    <!-- Privacy Policy Modal -->
-    <div id="privacyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto shadow-2xl">
-        <h3 class="text-xl font-bold mb-4 text-white">Privacy Policy</h3>
-        <p class="text-sm mb-3">At VibeLink, your privacy is our top priority. All video and text chats are peer-to-peer and encrypted.</p>
-        <button onclick="closeModal('privacyModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
-      </div>
-    </div>
-
-    <!-- Terms of Service Modal -->
-    <div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-      <div class="bg-gray-900 text-gray-200 max-w-lg w-full p-6 rounded-xl border border-gray-700 relative max-h-[80vh] overflow-y-auto shadow-2xl">
-        <h3 class="text-xl font-bold mb-4 text-white">Terms of Service</h3>
-        <p class="text-sm mb-3">You must be at least 18 years old to use this video chat platform. No harassment or nudity allowed.</p>
-        <button onclick="closeModal('termsModal')" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold">Close</button>
-      </div>
-    </div>
-
-    <!-- Functional Scripts -->
-    <script>
-      const socket = io();
-
-      function applyFilters() {
-        const gender = document.getElementById('genderFilter').value;
-        const country = document.getElementById('countryFilter').value;
-        socket.emit('set-filters', { gender, country });
-        alert("Filters applied successfully!");
-      }
-
-      function skipChat() {
-        socket.emit('skip-chat');
-        alert("Skipped. Finding next stranger...");
-      }
-
-      function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const msg = input.value.trim();
-        if(!msg) return;
-
-        const chatBox = document.getElementById('chatMessages');
-        chatBox.innerHTML += `<p><strong>You:</strong> ${msg}</p>`;
-        input.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-
-      function openModal(modalId) {
-        document.getElementById(modalId).classList.remove('hidden');
-      }
-      
-      function closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-      }
-    </script>
-</body>
-</html>
+                    <!-- Gender & Country Filter Dropdowns -->
+                    <div class="flex items-center gap-2">
+                        <select id="genderFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-blue-500">
+                            <option value="any">Any Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                        <select id="countryFilter" class="bg-gray-950 border border-gray-800 text-xs text-gray-30
