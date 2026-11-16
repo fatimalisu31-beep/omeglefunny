@@ -53,14 +53,14 @@
         <div id="filterSection" class="w-full max-w-md mb-6 p-4 bg-gray-900 border border-gray-800 rounded-xl shadow-lg">
           <h3 class="text-sm font-semibold mb-3 text-gray-300 flex items-center justify-between">
             <span>Match Filters</span>
-            <span class="text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal">VIP / Standard</span>
+            <span id="filterStatus" class="text-xs bg-gray-700 px-2 py-0.5 rounded text-gray-300 font-normal">Filters Active</span>
           </h3>
           
           <div class="grid grid-cols-2 gap-3">
             <!-- Gender Filter -->
             <div>
               <label class="block text-xs text-gray-400 mb-1">Looking for:</label>
-              <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500">
+              <select id="genderFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500 text-white">
                 <option value="any">Any Gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -70,7 +70,7 @@
             <!-- Country Filter -->
             <div>
               <label class="block text-xs text-gray-400 mb-1">Country:</label>
-              <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500">
+              <select id="countryFilter" class="w-full bg-gray-800 border border-gray-700 text-sm rounded-lg p-2 focus:outline-none focus:border-blue-500 text-white">
                 <option value="any">Worldwide</option>
                 <option value="us">United States</option>
                 <option value="uk">United Kingdom</option>
@@ -81,17 +81,17 @@
             </div>
           </div>
 
-          <button onclick="applyFilters()" class="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition">
-            Apply Filters & Search
+          <button onclick="applyFilters()" class="w-full mt-3 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold transition text-white">
+            Apply Filters
           </button>
         </div>
 
         <!-- Placeholder for Chat/Video Interface -->
         <div class="w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-xl p-6 text-center shadow-xl">
-            <p class="text-gray-400 mb-4">Video & Text Chat Interface is active and ready.</p>
+            <p class="text-gray-400 mb-4">Video & Text Chat Interface is active.</p>
             <div class="flex justify-center gap-4">
-                <button class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition">Start Chat</button>
-                <button class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold transition">Stop / Skip</button>
+                <button onclick="startChat()" class="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-lg font-semibold transition text-white">Start Chat</button>
+                <button onclick="skipChat()" class="px-6 py-2 bg-red-600 hover:bg-red-500 rounded-lg font-semibold transition text-white">Stop / Skip</button>
             </div>
         </div>
     </div>
@@ -129,13 +129,41 @@
       </div>
     </div>
 
-    <!-- Scripts & Modals Management -->
+    <!-- Functional Scripts -->
     <script>
+      const socket = io();
+
+      let currentFilters = {
+        gender: 'any',
+        country: 'any'
+      };
+
       function applyFilters() {
-        const gender = document.getElementById('genderFilter').value;
-        const country = document.getElementById('countryFilter').value;
-        console.log("Filters Applied - Gender:", gender, "Country:", country);
-        alert("Filters applied successfully! Finding match...");
+        currentFilters.gender = document.getElementById('genderFilter').value;
+        currentFilters.country = document.getElementById('countryFilter').value;
+        
+        const statusBadge = document.getElementById('filterStatus');
+        statusBadge.textContent = "Saved ✓";
+        statusBadge.className = "text-xs bg-green-600 px-2 py-0.5 rounded text-white font-normal";
+
+        // ব্যাকএন্ডে বা সার্ভারে ফিল্টার ডেটা পাঠানোর জন্য
+        socket.emit('set-filters', currentFilters);
+
+        setTimeout(() => {
+          statusBadge.textContent = "Filters Active";
+          statusBadge.className = "text-xs bg-blue-600 px-2 py-0.5 rounded text-white font-normal";
+        }, 2000);
+      }
+
+      function startChat() {
+        // চ্যাট শুরু করার সময় ফিল্টারসহ রিকোয়েস্ট পাঠানো
+        socket.emit('start-searching', currentFilters);
+        alert("Searching for a match with your filters...");
+      }
+
+      function skipChat() {
+        socket.emit('skip-chat');
+        alert("Skipped. Finding next stranger...");
       }
 
       function openModal(modalId) {
@@ -147,7 +175,7 @@
       }
 
       document.addEventListener("DOMContentLoaded", () => {
-        console.log("VibeLink all features loaded successfully!");
+        console.log("VibeLink system ready with filters.");
       });
     </script>
 </body>
