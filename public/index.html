@@ -279,8 +279,8 @@
           </div>
           <p id="stranger-overlay-title" class="text-sm font-semibold text-white">Looking for someone you can chat with...</p>
           <p id="stranger-overlay-sub" class="text-xs text-slate-400 mt-1">Matching based on your interests</p>
-          <p id="wait-joke" class="text-sm text-brand-400 mt-3 min-h-[20px] italic"></p>
-          <button type="button" onclick="popBubble(this)" class="pop-btn mt-3 px-4 py-2 rounded-full bg-slate-900 border border-brand-500/40 text-sm text-white transition">🫧 Pop while you wait: <b id="pop-score">0</b></button>
+          <div id="wait-extras" class="flex flex-col items-center"><p id="wait-joke" class="text-sm text-brand-400 mt-3 min-h-[20px] italic"></p>
+          <button type="button" onclick="popBubble(this)" class="pop-btn mt-3 px-4 py-2 rounded-full bg-slate-900 border border-brand-500/40 text-sm text-white transition">🫧 Pop while you wait: <b id="pop-score">0</b></button></div>
         </div>
 
         <!-- Top Badges -->
@@ -592,9 +592,10 @@
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
         // Production tip: Add TURN credentials here from Metered.ca or Twilio for strict mobile/corporate NATs:
-        // { urls: 'turn:your-turn-host:3478', username: 'user', credential: 'password' }
+        // TURN servers are added automatically from /api/turn (see server.js) so passwords never live in this file
       ]
     };
+    fetch('/api/turn').then(r => r.json()).then(list => { if (Array.isArray(list) && list.length) RTC_CONFIG.iceServers.push(...list); }).catch(() => {});
 
     // ==========================================
     // APPLICATION STATE
@@ -715,28 +716,39 @@
 
         socket.on('matched', async ({ initiator, sharedTags, partnerCountry }) => {
           onStrangerConnected(sharedTags || [], partnerCountry);
-          if (currentMode === 'video') {
+          // If the stranger's offer already arrived and created the connection, don't destroy it.
+          if (currentMode === 'video' && (initiator || !peerConnection)) {
             await setupPeerConnection(initiator);
           }
         });
 
         socket.on('webrtc-offer', async (offer) => {
-          if (!peerConnection) await setupPeerConnection(false);
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-          const answer = await peerConnection.createAnswer();
-          await peerConnection.setLocalDescription(answer);
-          socket.emit('webrtc-answer', answer);
+          try {
+            if (!peerConnection) await setupPeerConnection(false);
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+            await flushCandidates();
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit('webrtc-answer', answer);
+          } catch (e) { console.warn('offer handling failed', e); }
         });
 
         socket.on('webrtc-answer', async (answer) => {
-          if (peerConnection) {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-          }
+          try {
+            if (peerConnection) {
+              await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+              await flushCandidates();
+            }
+          } catch (e) { console.warn('answer handling failed', e); }
         });
 
         socket.on('webrtc-ice-candidate', async (candidate) => {
-          if (peerConnection && candidate) {
+          if (!candidate) return;
+          // Candidates can arrive before the remote description is set: queue them instead of dropping them.
+          if (peerConnection && peerConnection.remoteDescription) {
             try { await peerConnection.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {}
+          } else {
+            pendingCandidates.push(new RTCIceCandidate(candidate));
           }
         });
 
@@ -870,46 +882,62 @@
     // ==========================================
     // WEBRTC PEER CONNECTION LOGIC
     // ==========================================
+    let pendingCandidates = [], disconnectTimer = null;
+    async function flushCandidates() {
+      const list = pendingCandidates.splice(0);
+      for (const c of list) { try { await peerConnection.addIceCandidate(c); } catch (e) {} }
+    }
+
     async function setupPeerConnection(isInitiator) {
       closePeerConnection();
       peerConnection = new RTCPeerConnection(RTC_CONFIG);
+      const pc = peerConnection;
 
-      if (localStream) {
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-      }
+      const tracks = localStream ? localStream.getTracks() : [];
+      tracks.forEach(track => pc.addTrack(track, localStream));
+      // Camera/mic denied? Still be able to RECEIVE the stranger's video/audio.
+      if (!tracks.some(t => t.kind === 'video')) pc.addTransceiver('video', { direction: 'recvonly' });
+      if (!tracks.some(t => t.kind === 'audio')) pc.addTransceiver('audio', { direction: 'recvonly' });
 
       remoteStream = new MediaStream();
       const remoteVideo = document.getElementById('remote-video');
       remoteVideo.srcObject = remoteStream;
 
-      peerConnection.ontrack = (event) => {
-        event.streams[0].getTracks().forEach(track => remoteStream.addTrack(track));
+      pc.ontrack = (event) => {
+        remoteStream.addTrack(event.track);
         remoteVideo.classList.remove('hidden');
+        remoteVideo.play().catch(() => {});
         document.getElementById('stranger-canvas').classList.add('hidden');
         document.getElementById('p2p-badge').classList.remove('hidden');
         document.getElementById('p2p-badge').classList.add('flex');
       };
 
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate && socket) {
-          socket.emit('webrtc-ice-candidate', event.candidate);
-        }
+      pc.onicecandidate = (event) => {
+        if (event.candidate && socket) socket.emit('webrtc-ice-candidate', event.candidate);
       };
 
-      peerConnection.onconnectionstatechange = () => {
-        if (peerConnection && ['disconnected', 'failed', 'closed'].includes(peerConnection.connectionState)) {
-          if (chatState === 'connected') endConversation('Stranger connection lost.');
+      pc.onconnectionstatechange = () => {
+        if (pc !== peerConnection) return;
+        clearTimeout(disconnectTimer);
+        if (pc.connectionState === 'failed') {
+          if (chatState === 'connected') endConversation('Video connection failed. Try "Find New Stranger".');
+        } else if (pc.connectionState === 'disconnected') {
+          // mobile networks blip often; give it a few seconds to recover before giving up
+          disconnectTimer = setTimeout(() => {
+            if (pc === peerConnection && pc.connectionState !== 'connected' && chatState === 'connected') endConversation('Stranger connection lost.');
+          }, 8000);
         }
       };
 
       if (isInitiator) {
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
         socket.emit('webrtc-offer', offer);
       }
     }
 
     function closePeerConnection() {
+      pendingCandidates = []; clearTimeout(disconnectTimer);
       if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
@@ -1058,6 +1086,7 @@
 
     function findNewStranger() {
       flipPanels();
+      document.getElementById('wait-extras').classList.remove('hidden');
       clearAllTimers();
       closePeerConnection();
       resetSkipButton();
@@ -1187,6 +1216,7 @@
     }
 
     function endConversation(reasonText) {
+      document.getElementById('wait-extras').classList.add('hidden');
       clearAllTimers();
       closePeerConnection();
       chatState = 'disconnected';
@@ -1379,17 +1409,25 @@
     async function initLocalMedia() {
       const videoEl = document.getElementById('local-video');
       const fallbackEl = document.getElementById('local-fallback');
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        videoEl.srcObject = localStream;
-        videoEl.classList.remove('hidden');
-        fallbackEl.classList.add('hidden');
-        micEnabled = true;
-        camEnabled = true;
-      } catch (err) {
-        videoEl.classList.add('hidden');
-        fallbackEl.classList.remove('hidden');
+      const tries = [
+        { video: { facingMode: 'user' }, audio: { echoCancellation: true, noiseSuppression: true } },
+        { video: true, audio: true },
+        { video: false, audio: true }
+      ];
+      for (const c of tries) {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia(c);
+          videoEl.srcObject = localStream;
+          if (c.video) { videoEl.classList.remove('hidden'); fallbackEl.classList.add('hidden'); }
+          else { videoEl.classList.add('hidden'); fallbackEl.classList.remove('hidden'); }
+          micEnabled = true;
+          camEnabled = !!c.video;
+          return;
+        } catch (err) { /* try the next, simpler option */ }
       }
+      videoEl.classList.add('hidden');
+      fallbackEl.classList.remove('hidden');
+      appendSystemMessage('📵 Camera/mic blocked. Allow access in your browser (needs HTTPS). You can still see the stranger.');
     }
 
     function stopMediaStreams() {

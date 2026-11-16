@@ -27,6 +27,26 @@ app.post('/api/premium/verify', (req, res) => {
   res.json({ ok: isPremiumCode(req.body && req.body.code) });
 });
 
+// ---------- TURN (video/audio across strict networks) ----------
+// Option 1 (Metered.ca): set METERED_DOMAIN=yourapp.metered.live and METERED_API_KEY=xxxx
+// Option 2 (any TURN, e.g. Twilio/coturn): set TURN_URL=turn:host:3478,turns:host:443?transport=tcp  TURN_USER=...  TURN_PASS=...
+let turnCache = { at: 0, list: [] };
+app.get('/api/turn', async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try {
+    if (Date.now() - turnCache.at < 10 * 60 * 1000) return res.json(turnCache.list);
+    let list = [];
+    if (process.env.METERED_DOMAIN && process.env.METERED_API_KEY) {
+      const r = await fetch(`https://${process.env.METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${process.env.METERED_API_KEY}`);
+      if (r.ok) list = await r.json();
+    } else if (process.env.TURN_URL) {
+      list = [{ urls: process.env.TURN_URL.split(',').map(u => u.trim()), username: process.env.TURN_USER, credential: process.env.TURN_PASS }];
+    }
+    turnCache = { at: Date.now(), list: Array.isArray(list) ? list : [] };
+    res.json(turnCache.list);
+  } catch (e) { res.json([]); }
+});
+
 // ---------- MATCHING ----------
 const queues = { text: [], video: [] };
 const activePairs = new Map();
